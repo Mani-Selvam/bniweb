@@ -27,6 +27,20 @@ function publicUser(u) {
   };
 }
 
+router.post('/check-identifier', async (req, res, next) => {
+  try {
+    const { identifier } = req.body || {};
+    const query = findIdentifier(identifier);
+    if (!query) return res.status(400).json({ error: 'Phone or email is required' });
+    const user = await User.findOne(query);
+    if (!user) return res.status(404).json({ error: 'No account found for this phone/email' });
+    if (!user.isActive) return res.status(403).json({ error: 'Account is deactivated' });
+    res.json({ exists: true, passwordSet: !!user.passwordSet, name: user.name });
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.post('/request-otp', async (req, res, next) => {
   try {
     const { identifier, purpose = 'login' } = req.body || {};

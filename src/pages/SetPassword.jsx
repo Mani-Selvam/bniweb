@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../api/client.js'
 import { useAuth, dashboardPathForRole } from '../context/AuthContext.jsx'
+import PasswordInput from '../components/PasswordInput.jsx'
 
 export default function SetPassword() {
   const [password, setPassword] = useState('')
@@ -27,6 +28,7 @@ export default function SetPassword() {
       login(res.data.token, res.data.user)
       sessionStorage.removeItem('setup_token')
       sessionStorage.removeItem('otp_identifier')
+      sessionStorage.removeItem('otp_purpose')
       navigate(dashboardPathForRole(res.data.user.role), { replace: true })
     } catch (err) {
       setError(err.message)
@@ -46,11 +48,11 @@ export default function SetPassword() {
         <form onSubmit={handleSubmit} className="form">
           <label className="field">
             <span>New password</span>
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} autoFocus />
+            <PasswordInput value={password} onChange={(e) => setPassword(e.target.value)} autoFocus />
           </label>
           <label className="field">
             <span>Confirm password</span>
-            <input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required minLength={6} />
+            <PasswordInput value={confirm} onChange={(e) => setConfirm(e.target.value)} />
           </label>
           {error && <div className="alert error">{error}</div>}
           <button className="btn btn-primary" disabled={loading}>{loading ? 'Saving…' : 'Save & continue'}</button>

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../api/client.js'
+import PasswordInput from '../components/PasswordInput.jsx'
 
 export default function ForgotPassword() {
   const [step, setStep] = useState(1)
@@ -88,8 +89,8 @@ export default function ForgotPassword() {
 
         {step === 3 && (
           <form className="form" onSubmit={reset}>
-            <label className="field"><span>New password</span><input type="password" value={password} onChange={(e) => setPassword(e.target.value)} minLength={6} required autoFocus /></label>
-            <label className="field"><span>Confirm password</span><input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} minLength={6} required /></label>
+            <label className="field"><span>New password</span><PasswordInput value={password} onChange={(e) => setPassword(e.target.value)} autoFocus /></label>
+            <label className="field"><span>Confirm password</span><PasswordInput value={confirm} onChange={(e) => setConfirm(e.target.value)} /></label>
             {error && <div className="alert error">{error}</div>}
             <button className="btn btn-primary" disabled={loading}>{loading ? 'Saving…' : 'Reset password'}</button>
           </form>
