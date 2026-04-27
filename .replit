@@ -38,3 +38,20 @@ externalPort = 80
 deploymentTarget = "static"
 build = ["npm", "run", "build"]
 publicDir = "dist"
+
+[userenv]
+
+[userenv.shared]
+NEO_OTP_WHATSAPP_URL = "https://aiwhatsappapi.neophrontech.com/v1/message/send-message"
+NEO_OTP_TEMPLATE_NAME = "otp_verification"
+NEO_OTP_TEMPLATE_LANGUAGE = "en"
+NEO_OTP_TEMPLATE_BUTTON_INDEX = "0"
+EMAIL_HOST = "neophrondev.in"
+EMAIL_PORT = "465"
+EMAIL_SECURE = "true"
+EMAIL_USER = "noreplay@neophrondev.in"
+EMAIL_FROM = "noreplay@neophrondev.in"
+EMAIL_ENCRYPTION = "ssl"
+EMAIL_MAILER = "smtp"
+BACKEND_PORT = "3001"
+OTP_EXPIRY_MINUTES = "5"
