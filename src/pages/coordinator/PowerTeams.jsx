@@ -1,21 +1,23 @@
 import { useEffect, useMemo, useState } from 'react'
 import api from '../../api/client.js'
 import { useAuth } from '../../context/AuthContext.jsx'
+import PageHeader from '../../components/PageHeader.jsx'
+import Modal from '../../components/Modal.jsx'
 
 export default function PowerTeams() {
   const { user } = useAuth()
   const [teams, setTeams] = useState([])
   const [chapters, setChapters] = useState([])
   const [users, setUsers] = useState([])
+  const [search, setSearch] = useState('')
+  const [open, setOpen] = useState(false)
   const [form, setForm] = useState({ name: '', chapter: '', captain: '', viceCaptain: '', members: [] })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
   async function load() {
     const [t, c, u] = await Promise.all([api.get('/power-teams'), api.get('/chapters'), api.get('/users')])
-    setTeams(t.data.powerTeams)
-    setChapters(c.data.chapters)
-    setUsers(u.data.users)
+    setTeams(t.data.powerTeams); setChapters(c.data.chapters); setUsers(u.data.users)
   }
   useEffect(() => { load() }, [])
 
@@ -28,6 +30,18 @@ export default function PowerTeams() {
     [users, form.chapter]
   )
 
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return teams
+    return teams.filter((t) =>
+      t.name.toLowerCase().includes(q) ||
+      (t.chapter?.name || '').toLowerCase().includes(q) ||
+      (t.captain?.name || '').toLowerCase().includes(q) ||
+      (t.viceCaptain?.name || '').toLowerCase().includes(q) ||
+      (t.members || []).some((m) => m.name.toLowerCase().includes(q))
+    )
+  }, [teams, search])
+
   function setField(k, v) { setForm((f) => ({ ...f, [k]: v })) }
   function toggleMember(id) {
     setForm((f) => ({ ...f, members: f.members.includes(id) ? f.members.filter((x) => x !== id) : [...f.members, id] }))
@@ -35,60 +49,91 @@ export default function PowerTeams() {
 
   async function create(e) {
     e.preventDefault()
-    setError('')
-    setLoading(true)
+    setError(''); setLoading(true)
     try {
       await api.post('/power-teams', {
-        name: form.name,
-        chapter: form.chapter,
-        captain: form.captain || null,
-        viceCaptain: form.viceCaptain || null,
+        name: form.name, chapter: form.chapter,
+        captain: form.captain || null, viceCaptain: form.viceCaptain || null,
         members: form.members,
       })
       setForm({ name: '', chapter: form.chapter, captain: '', viceCaptain: '', members: [] })
+      setOpen(false)
       await load()
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
+    } catch (err) { setError(err.message) } finally { setLoading(false) }
   }
 
   async function remove(t) {
     if (!confirm(`Delete power team "${t.name}"?`)) return
-    await api.delete(`/power-teams/${t._id}`)
-    load()
+    await api.delete(`/power-teams/${t._id}`); load()
   }
 
   const isAdmin = user?.role === 'super_admin'
+  const canManage = isAdmin || user?.role === 'coordinator'
 
   return (
-    <div className="grid-2">
-      <section className="panel">
-        <h2 className="panel-title">Create power team</h2>
+    <div className="fade-in">
+      <PageHeader
+        title="Power Teams"
+        subtitle={`${filtered.length} of ${teams.length} teams`}
+        search={search} onSearch={setSearch} searchPlaceholder="Search team, chapter, captain or member"
+        actionLabel={canManage ? 'New team' : undefined}
+        onAction={canManage ? () => setOpen(true) : undefined}
+      />
+
+      <div className="team-grid">
+        {filtered.map((t) => (
+          <div key={t._id} className="team-card pop-in">
+            <div className="team-head">
+              <div>
+                <div className="team-name">{t.name}</div>
+                <div className="cell-sub">{t.chapter?.name}</div>
+              </div>
+              {canManage && <button className="btn btn-danger btn-sm" onClick={() => remove(t)}>Delete</button>}
+            </div>
+            <div className="team-leads">
+              <div><span className="muted small">Captain</span><div>{t.captain?.name || '—'}</div></div>
+              <div><span className="muted small">Vice Captain</span><div>{t.viceCaptain?.name || '—'}</div></div>
+            </div>
+            <div className="team-members">
+              <div className="muted small">Members ({t.members?.length || 0})</div>
+              <div className="member-chips">
+                {(t.members || []).map((m) => <span key={m._id} className="chip">{m.name}</span>)}
+                {(!t.members || t.members.length === 0) && <span className="muted small">No members yet</span>}
+              </div>
+            </div>
+          </div>
+        ))}
+        {filtered.length === 0 && <div className="muted center pad panel">{search ? 'No teams match your search' : 'No power teams yet'}</div>}
+      </div>
+
+      <Modal open={open} onClose={() => setOpen(false)} title="Create power team" width={560}>
         <form className="form" onSubmit={create}>
-          <label className="field">
-            <span>Chapter</span>
-            <select value={form.chapter} onChange={(e) => setField('chapter', e.target.value)} required>
-              <option value="">— Select —</option>
-              {chapters.map((c) => <option key={c._id} value={c._id}>{c.name}</option>)}
-            </select>
-          </label>
-          <label className="field"><span>Team name</span><input value={form.name} onChange={(e) => setField('name', e.target.value)} placeholder="Essentials / Builders / Growth" required /></label>
-          <label className="field">
-            <span>Captain</span>
-            <select value={form.captain} onChange={(e) => setField('captain', e.target.value)}>
-              <option value="">— None —</option>
-              {chapterUsers.map((u) => <option key={u._id} value={u._id}>{u.name} ({u.email})</option>)}
-            </select>
-          </label>
-          <label className="field">
-            <span>Vice Captain</span>
-            <select value={form.viceCaptain} onChange={(e) => setField('viceCaptain', e.target.value)}>
-              <option value="">— None —</option>
-              {chapterUsers.map((u) => <option key={u._id} value={u._id}>{u.name} ({u.email})</option>)}
-            </select>
-          </label>
+          <div className="grid-2-cols">
+            <label className="field">
+              <span>Chapter</span>
+              <select value={form.chapter} onChange={(e) => setField('chapter', e.target.value)} required>
+                <option value="">— Select —</option>
+                {chapters.map((c) => <option key={c._id} value={c._id}>{c.name}</option>)}
+              </select>
+            </label>
+            <label className="field"><span>Team name</span><input value={form.name} onChange={(e) => setField('name', e.target.value)} placeholder="Essentials" required /></label>
+          </div>
+          <div className="grid-2-cols">
+            <label className="field">
+              <span>Captain</span>
+              <select value={form.captain} onChange={(e) => setField('captain', e.target.value)}>
+                <option value="">— None —</option>
+                {chapterUsers.map((u) => <option key={u._id} value={u._id}>{u.name}</option>)}
+              </select>
+            </label>
+            <label className="field">
+              <span>Vice Captain</span>
+              <select value={form.viceCaptain} onChange={(e) => setField('viceCaptain', e.target.value)}>
+                <option value="">— None —</option>
+                {chapterUsers.map((u) => <option key={u._id} value={u._id}>{u.name}</option>)}
+              </select>
+            </label>
+          </div>
           <div className="field">
             <span>Members ({form.members.length} selected)</span>
             <div className="checkbox-list">
@@ -103,37 +148,12 @@ export default function PowerTeams() {
             </div>
           </div>
           {error && <div className="alert error">{error}</div>}
-          <button className="btn btn-primary" disabled={loading}>{loading ? 'Saving…' : 'Create team'}</button>
+          <div className="row-end">
+            <button type="button" className="btn btn-ghost" onClick={() => setOpen(false)}>Cancel</button>
+            <button className="btn btn-primary" disabled={loading}>{loading ? 'Saving…' : 'Create team'}</button>
+          </div>
         </form>
-      </section>
-
-      <section className="panel">
-        <h2 className="panel-title">All power teams ({teams.length})</h2>
-        <div className="team-list">
-          {teams.map((t) => (
-            <div key={t._id} className="team-card">
-              <div className="team-head">
-                <div>
-                  <div className="team-name">{t.name}</div>
-                  <div className="cell-sub">{t.chapter?.name}</div>
-                </div>
-                {(isAdmin || user?.role === 'coordinator') && (
-                  <button className="btn btn-danger btn-sm" onClick={() => remove(t)}>Delete</button>
-                )}
-              </div>
-              <div className="team-leads">
-                <div><strong>Captain:</strong> {t.captain?.name || '—'}</div>
-                <div><strong>Vice Captain:</strong> {t.viceCaptain?.name || '—'}</div>
-              </div>
-              <div className="team-members">
-                <strong>Members ({t.members?.length || 0}):</strong>{' '}
-                {(t.members || []).map((m) => m.name).join(', ') || '—'}
-              </div>
-            </div>
-          ))}
-          {teams.length === 0 && <div className="muted center">No power teams yet</div>}
-        </div>
-      </section>
+      </Modal>
     </div>
   )
 }
