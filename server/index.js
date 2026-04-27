@@ -17,7 +17,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isProd = process.env.NODE_ENV === 'production';
 const app = express();
 const PORT = parseInt(process.env.PORT || (isProd ? '5000' : process.env.BACKEND_PORT || '3001'), 10);
-const HOST = isProd ? '0.0.0.0' : 'localhost';
+const HOST = isProd ? '0.0.0.0' : '127.0.0.1';
 
 app.use(cors());
 app.use(express.json());
