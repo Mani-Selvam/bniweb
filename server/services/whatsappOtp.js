@@ -1,5 +1,14 @@
 import axios from 'axios';
 
+function normalizePhone(phone) {
+  const digits = String(phone || '').replace(/[^0-9]/g, '');
+  // Strip leading zero (some inputs like 09876543210)
+  const trimmed = digits.replace(/^0+/, '');
+  // If 10 digits, assume India (+91). Otherwise leave as-is.
+  if (trimmed.length === 10) return `91${trimmed}`;
+  return trimmed;
+}
+
 export async function sendWhatsappOtp({ phone, code }) {
   const url = process.env.NEO_OTP_WHATSAPP_URL;
   const token = process.env.NEO_OTP_TEMPLATE_TOKEN;
@@ -12,22 +21,35 @@ export async function sendWhatsappOtp({ phone, code }) {
     return { skipped: true };
   }
 
+  const to = normalizePhone(phone);
   const payload = {
-    token,
-    phone,
-    template_name: templateName,
-    template_language: language,
-    components: [
-      { type: 'body', parameters: [{ type: 'text', text: code }] },
-      { type: 'button', sub_type: 'url', index: buttonIndex, parameters: [{ type: 'text', text: code }] },
-    ],
+    to,
+    type: 'template',
+    template: {
+      name: templateName,
+      language: { code: language },
+      components: [
+        { type: 'body', parameters: [{ type: 'text', text: String(code) }] },
+        { type: 'button', sub_type: 'url', index: buttonIndex, parameters: [{ type: 'text', text: String(code) }] },
+      ],
+    },
   };
 
   try {
-    const res = await axios.post(url, payload, { timeout: 15000 });
-    return { ok: true, data: res.data };
+    const res = await axios.post(url, payload, {
+      timeout: 15000,
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    const data = res.data || {};
+    const messageStatus = data?.messages?.[0]?.message_status;
+    console.log(`[whatsappOtp] sent to ${to} status=${messageStatus || 'unknown'}`);
+    return { ok: true, data };
   } catch (err) {
-    console.error('[whatsappOtp] failed', err.response?.data || err.message);
-    return { ok: false, error: err.response?.data || err.message };
+    const errPayload = err.response?.data || err.message;
+    console.error(`[whatsappOtp] failed for ${to}:`, errPayload);
+    return { ok: false, error: errPayload };
   }
 }
