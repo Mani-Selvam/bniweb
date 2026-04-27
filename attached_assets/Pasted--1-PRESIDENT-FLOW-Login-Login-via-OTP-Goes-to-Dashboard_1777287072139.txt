@@ -1,0 +1,124 @@
+👑 1. PRESIDENT – FLOW
+🔐 Login
+Login via OTP
+→ Goes to Dashboard
+🏠 Dashboard View
+Total Power Teams
+Total Members
+Meeting summary
+TYFCB overview
+🔍 What President Does
+✅ 1. View All Power Teams
+Essentials
+Builders
+Growth
+
+👉 Can see full details
+
+✅ 2. Monitor Performance
+Attendance
+TYFCB
+Ask vs Gives
+✅ 3. Control Actions
+Activate / Deactivate:
+Users
+Power Teams
+✅ 4. View Reports
+All meeting reports
+Filter by team/date
+🔄 PRESIDENT FLOW
+Login
+↓
+Dashboard
+↓
+View All Teams
+↓
+Check Reports / Analytics
+↓
+Control (Activate / Deactivate)
+⭐ 2. VICE PRESIDENT – FLOW
+🔐 Login
+
+→ Dashboard
+
+🏠 Dashboard
+Same as President (slightly limited)
+🔍 What Vice President Does
+✅ 1. View All Teams
+Full visibility
+✅ 2. Focus on Reports
+Meeting reports
+Attendance tracking
+TYFCB tracking
+✅ 3. Analytics
+Performance charts
+Compare teams
+❌ Cannot:
+Delete chapter
+Full override control
+🔄 VICE PRESIDENT FLOW
+Login
+↓
+Dashboard
+↓
+View Reports
+↓
+Analyze Performance
+↓
+Support President
+🔥 3. POWER TEAM COORDINATOR – FLOW
+
+👉 This is the main working role
+
+🔐 Login
+
+→ Dashboard
+
+🏠 Dashboard
+Power Teams list
+Members count
+🔧 What Coordinator Does
+✅ 1. Create Power Team
+Add:
+Essentials
+Builders
+Growth
+✅ 2. Assign Roles
+
+Inside each team:
+
+Assign Captain
+Assign Vice Captain
+✅ 3. Add Members
+Add users to team
+Remove users
+Move between teams
+✅ 4. Manage Teams
+Edit team name
+Update members
+👁️ 5. View Reports (Optional)
+Basic view only
+🔄 COORDINATOR FLOW
+Login
+↓
+Dashboard
+↓
+Create Power Team
+↓
+Assign Captain / Vice Captain
+↓
+Add Members
+↓
+Manage Teams
+🧠 FINAL COMPARISON (VERY IMPORTANT)
+Role	Main Work
+President	Control + Monitor
+Vice President	Reports + Analytics
+Coordinator	Build & Manage Teams
+🎯 SIMPLE UNDERSTANDING
+👑 President → “Boss” (control)
+⭐ Vice President → “Analyst” (reports)
+🔥 Coordinator → “Operator” (does actual setup)
+✅ FINAL RESULT
+
+👉 Now your system is fully structured and clear
