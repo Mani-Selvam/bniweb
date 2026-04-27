@@ -77,27 +77,27 @@ export default function Users() {
             <tbody>
               {filtered.map((u) => (
                 <tr key={u._id}>
-                  <td>
+                  <td data-label="Name">
                     <div className="cell-name">{u.name}</div>
                     <div className="cell-sub">{u.passwordSet ? 'Password set' : 'Awaiting first login'}</div>
                   </td>
-                  <td>
+                  <td data-label="Contact">
                     <div>{u.phone}</div>
                     <div className="cell-sub">{u.email}</div>
                   </td>
-                  <td>
+                  <td data-label="Role">
                     <select value={u.role} onChange={(e) => updateRole(u, e.target.value)} className="select-inline">
                       {ROLE_OPTIONS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
                     </select>
                   </td>
-                  <td>
+                  <td data-label="Chapter">
                     <select value={u.chapter?._id || u.chapter || ''} onChange={(e) => updateChapter(u, e.target.value)} className="select-inline">
                       <option value="">—</option>
                       {chapters.map((c) => <option key={c._id} value={c._id}>{c.name}</option>)}
                     </select>
                   </td>
-                  <td><span className={'badge ' + (u.isActive ? 'ok' : 'off')}>{u.isActive ? 'Active' : 'Inactive'}</span></td>
-                  <td className="row-actions">
+                  <td data-label="Status"><span className={'badge ' + (u.isActive ? 'ok' : 'off')}>{u.isActive ? 'Active' : 'Inactive'}</span></td>
+                  <td data-label="Actions" className="row-actions">
                     <button className="btn btn-ghost btn-sm" onClick={() => toggle(u)}>{u.isActive ? 'Disable' : 'Enable'}</button>
                     <button className="btn btn-danger btn-sm" onClick={() => remove(u)}>Delete</button>
                   </td>

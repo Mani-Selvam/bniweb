@@ -60,10 +60,10 @@ export default function Chapters() {
             <tbody>
               {filtered.map((c) => (
                 <tr key={c._id}>
-                  <td><div className="cell-name">{c.name}</div></td>
-                  <td>{c.location || '—'}</td>
-                  <td><span className={'badge ' + (c.isActive ? 'ok' : 'off')}>{c.isActive ? 'Active' : 'Inactive'}</span></td>
-                  <td className="row-actions">
+                  <td data-label="Name"><div className="cell-name">{c.name}</div></td>
+                  <td data-label="Location">{c.location || '—'}</td>
+                  <td data-label="Status"><span className={'badge ' + (c.isActive ? 'ok' : 'off')}>{c.isActive ? 'Active' : 'Inactive'}</span></td>
+                  <td data-label="Actions" className="row-actions">
                     <button className="btn btn-ghost btn-sm" onClick={() => toggle(c)}>{c.isActive ? 'Deactivate' : 'Activate'}</button>
                     <button className="btn btn-danger btn-sm" onClick={() => remove(c)}>Delete</button>
                   </td>
