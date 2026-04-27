@@ -12,7 +12,11 @@ export default function Login() {
   const [name, setName] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [info, setInfo] = useState('')
+  const [info, setInfo] = useState(() => {
+    const reason = sessionStorage.getItem('logout_reason')
+    if (reason) sessionStorage.removeItem('logout_reason')
+    return reason || ''
+  })
   const navigate = useNavigate()
   const { login } = useAuth()
 

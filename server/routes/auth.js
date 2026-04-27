@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import User from '../models/User.js';
 import { issueOtp, verifyOtp } from '../services/otp.js';
@@ -6,6 +7,15 @@ import { signToken } from '../utils/jwt.js';
 import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
+
+async function startNewSession(user, req) {
+  const sessionId = crypto.randomUUID();
+  user.sessionId = sessionId;
+  user.lastLoginAt = new Date();
+  user.lastDevice = (req?.headers?.['user-agent'] || '').slice(0, 200);
+  await user.save();
+  return signToken({ sub: user._id, sid: sessionId });
+}
 
 function findIdentifier(identifier) {
   const id = (identifier || '').trim().toLowerCase();
@@ -79,9 +89,7 @@ router.post('/verify-otp', async (req, res, next) => {
         const setupToken = signToken({ sub: user._id, kind: 'set_password' }, { expiresIn: '15m' });
         return res.json({ requiresPasswordSetup: true, setupToken, user: publicUser(user) });
       }
-      user.lastLoginAt = new Date();
-      await user.save();
-      const token = signToken({ sub: user._id });
+      const token = await startNewSession(user, req);
       return res.json({ token, user: publicUser(user) });
     }
 
@@ -115,9 +123,7 @@ router.post('/set-password', async (req, res, next) => {
     if (!user) return res.status(404).json({ error: 'User not found' });
     user.passwordHash = await bcrypt.hash(password, 10);
     user.passwordSet = true;
-    user.lastLoginAt = new Date();
-    await user.save();
-    const token = signToken({ sub: user._id });
+    const token = await startNewSession(user, req);
     res.json({ token, user: publicUser(user) });
   } catch (err) {
     next(err);
@@ -137,9 +143,7 @@ router.post('/login-password', async (req, res, next) => {
     }
     const ok = await bcrypt.compare(String(password), user.passwordHash);
     if (!ok) return res.status(401).json({ error: 'Incorrect password' });
-    user.lastLoginAt = new Date();
-    await user.save();
-    const token = signToken({ sub: user._id });
+    const token = await startNewSession(user, req);
     res.json({ token, user: publicUser(user) });
   } catch (err) {
     next(err);
@@ -148,6 +152,12 @@ router.post('/login-password', async (req, res, next) => {
 
 router.get('/me', requireAuth, async (req, res) => {
   res.json({ user: publicUser(req.user) });
+});
+
+router.post('/logout', requireAuth, async (req, res) => {
+  req.user.sessionId = null;
+  await req.user.save();
+  res.json({ ok: true });
 });
 
 export default router;

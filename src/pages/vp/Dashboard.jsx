@@ -1,44 +1,27 @@
-import { useEffect, useState } from 'react'
-import api from '../../api/client.js'
+import RoleDashboard from '../../components/RoleDashboard.jsx'
+
+const ICON = {
+  meet: 'M19 4H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zM16 2v4M8 2v4M3 10h18',
+  money: 'M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6',
+  ref: 'M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M8.5 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM20 8v6M23 11h-6',
+  vis: 'M20 21v-2a4 4 0 0 0-3-3.87M4 21v-2a4 4 0 0 1 3-3.87M16 3.13a4 4 0 0 1 0 7.75M12 7a4 4 0 1 1-8 0 4 4 0 0 1 8 0z',
+  team: 'M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5',
+  users: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75',
+}
 
 export default function VpDashboard() {
-  const [data, setData] = useState(null)
-  const [meetings, setMeetings] = useState([])
-  useEffect(() => {
-    Promise.all([api.get('/dashboard/summary'), api.get('/meetings')]).then(([s, m]) => { setData(s.data); setMeetings(m.data.meetings) })
-  }, [])
-  if (!data) return <div className="page-loading">Loading…</div>
-  const totalRefs = meetings.reduce((s, m) => s + (m.referrals || 0), 0)
-  const totalVis = meetings.reduce((s, m) => s + (m.visitors || 0), 0)
   return (
-    <div>
-      <div className="hint">Reports & analytics across the chapter.</div>
-      <div className="stat-grid">
-        <div className="stat-card" style={{ borderTop: '3px solid #f59e0b' }}><div className="stat-label">Meetings</div><div className="stat-value">{data.totalMeetings}</div></div>
-        <div className="stat-card" style={{ borderTop: '3px solid #ef4444' }}><div className="stat-label">TYFCB</div><div className="stat-value">₹{Number(data.tyfcbTotal).toLocaleString()}</div></div>
-        <div className="stat-card" style={{ borderTop: '3px solid #8b5cf6' }}><div className="stat-label">Referrals</div><div className="stat-value">{totalRefs}</div></div>
-        <div className="stat-card" style={{ borderTop: '3px solid #14b8a6' }}><div className="stat-label">Visitors</div><div className="stat-value">{totalVis}</div></div>
-      </div>
-      <section className="panel" style={{ marginTop: 24 }}>
-        <h2 className="panel-title">Meeting reports</h2>
-        <div className="table-wrap">
-          <table className="table">
-            <thead><tr><th>Date</th><th>Team</th><th>TYFCB</th><th>Referrals</th><th>Visitors</th></tr></thead>
-            <tbody>
-              {meetings.map((m) => (
-                <tr key={m._id}>
-                  <td>{new Date(m.date).toLocaleDateString()}</td>
-                  <td>{m.powerTeam?.name || '—'}</td>
-                  <td>₹{Number(m.tyfcb || 0).toLocaleString()}</td>
-                  <td>{m.referrals || 0}</td>
-                  <td>{m.visitors || 0}</td>
-                </tr>
-              ))}
-              {meetings.length === 0 && <tr><td colSpan={5} className="muted center">No meetings recorded</td></tr>}
-            </tbody>
-          </table>
-        </div>
-      </section>
-    </div>
+    <RoleDashboard
+      title="Vice President Dashboard"
+      subtitle="Reports & analytics across the chapter."
+      statsConfig={(d) => [
+        { key: 'totalMeetings', label: 'Meetings', accent: '#f59e0b', icon: ICON.meet, value: d.totalMeetings },
+        { key: 'tyfcbTotal', label: 'TYFCB (₹)', accent: '#ef4444', icon: ICON.money, value: d.tyfcbTotal, isCurrency: true },
+        { key: 'referralsTotal', label: 'Referrals', accent: '#8b5cf6', icon: ICON.ref, value: d.referralsTotal },
+        { key: 'visitorsTotal', label: 'Visitors', accent: '#14b8a6', icon: ICON.vis, value: d.visitorsTotal },
+        { key: 'totalPowerTeams', label: 'Power Teams', accent: '#10b981', icon: ICON.team, value: d.totalPowerTeams },
+        { key: 'totalUsers', label: 'Members', accent: '#0ea5e9', icon: ICON.users, value: d.totalUsers },
+      ]}
+    />
   )
 }

@@ -9,6 +9,9 @@ export async function requireAuth(req, res, next) {
     const decoded = verifyToken(token);
     const user = await User.findById(decoded.sub);
     if (!user || !user.isActive) return res.status(401).json({ error: 'Invalid session' });
+    if (user.sessionId && decoded.sid && user.sessionId !== decoded.sid) {
+      return res.status(401).json({ error: 'Signed in on another device. Please log in again.' });
+    }
     req.user = user;
     next();
   } catch (_err) {

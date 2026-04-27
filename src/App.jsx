@@ -14,6 +14,7 @@ import PresidentDashboard from './pages/president/Dashboard.jsx'
 import VpDashboard from './pages/vp/Dashboard.jsx'
 import CoordinatorDashboard from './pages/coordinator/Dashboard.jsx'
 import CoordinatorPowerTeams from './pages/coordinator/PowerTeams.jsx'
+import CoordinatorUsers from './pages/coordinator/Users.jsx'
 import MemberDashboard from './pages/MemberDashboard.jsx'
 
 function HomeRedirect() {
@@ -31,6 +32,7 @@ const adminLinks = [
 
 const coordinatorLinks = [
   { to: '/coordinator', label: 'Dashboard', end: true, icon: '◆' },
+  { to: '/coordinator/members', label: 'Members', icon: '👥' },
   { to: '/coordinator/power-teams', label: 'Power Teams', icon: '⚡' },
 ]
 
@@ -64,6 +66,7 @@ export default function App() {
 
       <Route element={<ProtectedRoute roles={['coordinator']}><Layout links={coordinatorLinks} title="Coordinator" /></ProtectedRoute>}>
         <Route path="/coordinator" element={<CoordinatorDashboard />} />
+        <Route path="/coordinator/members" element={<CoordinatorUsers />} />
         <Route path="/coordinator/power-teams" element={<CoordinatorPowerTeams />} />
       </Route>
 

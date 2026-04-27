@@ -22,6 +22,8 @@ const userSchema = new mongoose.Schema(
     passwordSet: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true },
     lastLoginAt: { type: Date, default: null },
+    sessionId: { type: String, default: null },
+    lastDevice: { type: String, default: null },
   },
   { timestamps: true }
 );

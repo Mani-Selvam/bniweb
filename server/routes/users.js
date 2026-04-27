@@ -22,19 +22,31 @@ router.get('/', async (req, res, next) => {
   }
 });
 
-router.post('/', requireRole('super_admin'), async (req, res, next) => {
+const COORDINATOR_ALLOWED_ROLES = ['member', 'captain', 'vice_captain'];
+
+router.post('/', requireRole('super_admin', 'coordinator'), async (req, res, next) => {
   try {
     const { name, phone, email, role = 'member', chapter, powerTeam } = req.body || {};
     if (!name || !phone || !email) {
       return res.status(400).json({ error: 'Name, phone and email are required' });
     }
     if (!ROLES.includes(role)) return res.status(400).json({ error: 'Invalid role' });
+
+    let chapterId = chapter || null;
+    if (req.user.role === 'coordinator') {
+      if (!COORDINATOR_ALLOWED_ROLES.includes(role)) {
+        return res.status(403).json({ error: 'Coordinators can only create members, captains, or vice-captains' });
+      }
+      if (!req.user.chapter) return res.status(400).json({ error: 'You are not assigned to a chapter' });
+      chapterId = req.user.chapter;
+    }
+
     const user = await User.create({
       name: name.trim(),
       phone: String(phone).trim(),
       email: String(email).toLowerCase().trim(),
       role,
-      chapter: chapter || null,
+      chapter: chapterId,
       powerTeam: powerTeam || null,
     });
     res.status(201).json({ user });
