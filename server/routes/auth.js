@@ -17,11 +17,22 @@ async function startNewSession(user, req) {
   return signToken({ sub: user._id, sid: sessionId });
 }
 
+// Build a Mongo query for either email or phone.
+// Phones in this app are stored with the country prefix (e.g. 919876543210)
+// but users may type just the 10-digit number on the login screen, so we
+// match any phone ending in the last 10 digits (with or without the "91" prefix).
 function findIdentifier(identifier) {
   const id = (identifier || '').trim().toLowerCase();
   if (!id) return null;
   if (id.includes('@')) return { email: id };
-  return { phone: id.replace(/[^0-9+]/g, '') };
+  const digits = id.replace(/\D/g, '');
+  if (!digits) return null;
+  const last10 = digits.slice(-10);
+  if (last10.length < 10) {
+    // not yet a complete phone — still attempt exact match so partial inputs don't false-match
+    return { phone: digits };
+  }
+  return { phone: { $regex: `^(91)?${last10}$` } };
 }
 
 function publicUser(u) {

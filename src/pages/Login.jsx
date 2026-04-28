@@ -155,7 +155,20 @@ export default function Login() {
             </>
           )}
 
-          {(probe === null || probe === 'checking' || probe === 'notfound') && (
+          {probe === 'notfound' && (
+            <>
+              {error && <div className="alert error">{error}</div>}
+              {info && <div className="alert info">{info}</div>}
+              <button type="button" className="btn btn-secondary" onClick={sendCode} disabled={loading}>
+                {loading ? 'Trying…' : 'Try sending a one-time code anyway'}
+              </button>
+              <p className="muted small center">
+                If you still don't get a code, your account may not be set up yet — please contact your chapter admin.
+              </p>
+            </>
+          )}
+
+          {(probe === null || probe === 'checking') && (
             <>
               {error && <div className="alert error">{error}</div>}
               {info && <div className="alert info">{info}</div>}
