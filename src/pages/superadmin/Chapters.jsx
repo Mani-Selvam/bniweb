@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import api from '../../api/client.js'
 import PageHeader from '../../components/PageHeader.jsx'
 import Modal from '../../components/Modal.jsx'
+import ChapterTreeModal from '../../components/ChapterTreeModal.jsx'
 
 const EMPTY = { name: '', location: '' }
 
@@ -13,6 +15,8 @@ export default function Chapters() {
   const [form, setForm] = useState(EMPTY)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [viewingId, setViewingId] = useState(null)
+  const navigate = useNavigate()
 
   async function load() {
     try {
@@ -28,21 +32,14 @@ export default function Chapters() {
     return chapters.filter((c) => c.name.toLowerCase().includes(q) || (c.location || '').toLowerCase().includes(q))
   }, [chapters, search])
 
-  function openNew() {
-    setEditing(null); setForm(EMPTY); setError(''); setOpen(true)
-  }
-  function openEdit(c) {
-    setEditing(c); setForm({ name: c.name, location: c.location || '' }); setError(''); setOpen(true)
-  }
+  function openNew() { setEditing(null); setForm(EMPTY); setError(''); setOpen(true) }
+  function openEdit(c) { setEditing(c); setForm({ name: c.name, location: c.location || '' }); setError(''); setOpen(true) }
 
   async function save(e) {
     e.preventDefault(); setError(''); setLoading(true)
     try {
-      if (editing) {
-        await api.put(`/chapters/${editing._id}`, { name: form.name, location: form.location })
-      } else {
-        await api.post('/chapters', { name: form.name, location: form.location })
-      }
+      if (editing) await api.put(`/chapters/${editing._id}`, { name: form.name, location: form.location })
+      else await api.post('/chapters', { name: form.name, location: form.location })
       setForm(EMPTY); setEditing(null); setOpen(false)
       await load()
     } catch (err) { setError(err.message) } finally { setLoading(false) }
@@ -50,8 +47,12 @@ export default function Chapters() {
 
   async function toggle(c) { await api.put(`/chapters/${c._id}`, { isActive: !c.isActive }); load() }
   async function remove(c) {
-    if (!confirm(`Delete chapter "${c.name}"?`)) return
-    await api.delete(`/chapters/${c._id}`); load()
+    if (!confirm(`Delete chapter "${c.name}"? This will fail if it still has teams or members.`)) return
+    try { await api.delete(`/chapters/${c._id}`); load() } catch (err) { alert(err.message) }
+  }
+
+  function addPowerTeam(c) {
+    navigate(`/admin/power-teams?createForChapter=${c._id}`)
   }
 
   return (
@@ -66,21 +67,30 @@ export default function Chapters() {
       <section className="panel">
         <div className="table-wrap">
           <table className="table">
-            <thead><tr><th>Name</th><th>Location</th><th>Status</th><th></th></tr></thead>
+            <thead><tr><th>Chapter</th><th>Location</th><th className="num">Power Teams</th><th className="num">Members</th><th className="num">Meetings</th><th>Status</th><th></th></tr></thead>
             <tbody>
               {filtered.map((c) => (
                 <tr key={c._id}>
-                  <td data-label="Name"><div className="cell-name">{c.name}</div></td>
+                  <td data-label="Chapter">
+                    <button className="link-cell" onClick={() => setViewingId(c._id)} title="View chapter tree">
+                      <span className="cell-name">{c.name}</span>
+                    </button>
+                  </td>
                   <td data-label="Location">{c.location || '—'}</td>
+                  <td data-label="Power Teams" className="num">{c.teamCount}</td>
+                  <td data-label="Members" className="num">{c.userCount}</td>
+                  <td data-label="Meetings" className="num">{c.meetingCount}</td>
                   <td data-label="Status"><span className={'badge ' + (c.isActive ? 'ok' : 'off')}>{c.isActive ? 'Active' : 'Inactive'}</span></td>
                   <td data-label="Actions" className="row-actions">
+                    <button className="btn btn-primary btn-sm" onClick={() => addPowerTeam(c)}>+ Power Team</button>
+                    <button className="btn btn-ghost btn-sm" onClick={() => setViewingId(c._id)}>View</button>
                     <button className="btn btn-secondary btn-sm" onClick={() => openEdit(c)}>Edit</button>
                     <button className="btn btn-ghost btn-sm" onClick={() => toggle(c)}>{c.isActive ? 'Deactivate' : 'Activate'}</button>
                     <button className="btn btn-danger btn-sm" onClick={() => remove(c)}>Delete</button>
                   </td>
                 </tr>
               ))}
-              {filtered.length === 0 && <tr><td colSpan={4} className="muted center pad">{search ? 'No chapters match your search' : 'No chapters yet — click "New chapter" to add one'}</td></tr>}
+              {filtered.length === 0 && <tr><td colSpan={7} className="muted center pad">{search ? 'No chapters match your search' : 'No chapters yet — click "New chapter" to add one'}</td></tr>}
             </tbody>
           </table>
         </div>
@@ -97,6 +107,8 @@ export default function Chapters() {
           </div>
         </form>
       </Modal>
+
+      <ChapterTreeModal chapterId={viewingId} open={!!viewingId} onClose={() => setViewingId(null)} basePath="/admin" />
     </div>
   )
 }

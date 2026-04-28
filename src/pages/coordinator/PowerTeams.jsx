@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import api from '../../api/client.js'
 import { useAuth } from '../../context/AuthContext.jsx'
 import PageHeader from '../../components/PageHeader.jsx'
@@ -8,6 +9,7 @@ const EMPTY = { name: '', chapter: '', captain: '', viceCaptain: '', members: []
 
 export default function PowerTeams() {
   const { user } = useAuth()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [teams, setTeams] = useState([])
   const [chapters, setChapters] = useState([])
   const [users, setUsers] = useState([])
@@ -27,6 +29,18 @@ export default function PowerTeams() {
   useEffect(() => {
     if (!editing && !form.chapter && chapters.length === 1) setForm((f) => ({ ...f, chapter: chapters[0]._id }))
   }, [chapters, form.chapter, editing])
+
+  // Auto-open create modal when ?createForChapter=<id> is in the URL (e.g. coming from Chapters page)
+  useEffect(() => {
+    const cid = searchParams.get('createForChapter')
+    if (cid && chapters.some((c) => c._id === cid)) {
+      setEditing(null)
+      setForm({ ...EMPTY, chapter: cid })
+      setError(''); setOpen(true)
+      const next = new URLSearchParams(searchParams); next.delete('createForChapter')
+      setSearchParams(next, { replace: true })
+    }
+  }, [searchParams, chapters, setSearchParams])
 
   const chapterUsers = useMemo(
     () => users.filter((u) => (u.chapter?._id || u.chapter) === form.chapter),
