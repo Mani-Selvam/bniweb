@@ -56,8 +56,11 @@ router.post('/', requireRole('super_admin', 'coordinator'), async (req, res, nex
   }
 });
 
-router.put('/:id', requireRole('super_admin'), async (req, res, next) => {
+router.put('/:id', requireRole('super_admin', 'coordinator'), async (req, res, next) => {
   try {
+    const target = await User.findById(req.params.id);
+    if (!target) return res.status(404).json({ error: 'User not found' });
+
     const { name, phone, email, role, chapter, powerTeam, isActive } = req.body || {};
     const update = {};
     if (name !== undefined) update.name = name.trim();
@@ -70,8 +73,24 @@ router.put('/:id', requireRole('super_admin'), async (req, res, next) => {
     if (chapter !== undefined) update.chapter = chapter || null;
     if (powerTeam !== undefined) update.powerTeam = powerTeam || null;
     if (isActive !== undefined) update.isActive = !!isActive;
+
+    if (req.user.role === 'coordinator') {
+      const myChapter = String(req.user.chapter || '');
+      const targetChapter = String(target.chapter || '');
+      if (!myChapter || targetChapter !== myChapter) {
+        return res.status(403).json({ error: 'You can only edit members of your own chapter' });
+      }
+      if (!COORDINATOR_ALLOWED_ROLES.includes(target.role)) {
+        return res.status(403).json({ error: 'Only members, captains, or vice-captains can be edited' });
+      }
+      if (update.role && !COORDINATOR_ALLOWED_ROLES.includes(update.role)) {
+        return res.status(403).json({ error: 'You can only assign member, captain, or vice-captain roles' });
+      }
+      // lock chapter to coordinator's own chapter
+      update.chapter = req.user.chapter;
+    }
+
     const user = await User.findByIdAndUpdate(req.params.id, update, { new: true });
-    if (!user) return res.status(404).json({ error: 'User not found' });
     res.json({ user });
   } catch (err) {
     if (err.code === 11000) return res.status(409).json({ error: 'Phone or email already exists' });
@@ -79,10 +98,20 @@ router.put('/:id', requireRole('super_admin'), async (req, res, next) => {
   }
 });
 
-router.post('/:id/toggle-active', requireRole('super_admin', 'president'), async (req, res, next) => {
+router.post('/:id/toggle-active', requireRole('super_admin', 'president', 'coordinator'), async (req, res, next) => {
   try {
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ error: 'User not found' });
+    if (req.user.role === 'coordinator') {
+      const myChapter = String(req.user.chapter || '');
+      const targetChapter = String(user.chapter || '');
+      if (!myChapter || targetChapter !== myChapter) {
+        return res.status(403).json({ error: 'You can only manage members of your own chapter' });
+      }
+      if (!COORDINATOR_ALLOWED_ROLES.includes(user.role)) {
+        return res.status(403).json({ error: 'You can only manage members, captains, or vice-captains' });
+      }
+    }
     user.isActive = !user.isActive;
     await user.save();
     res.json({ user });

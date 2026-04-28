@@ -4,6 +4,8 @@ import { useAuth } from '../../context/AuthContext.jsx'
 import PageHeader from '../../components/PageHeader.jsx'
 import Modal from '../../components/Modal.jsx'
 
+const EMPTY = { name: '', chapter: '', captain: '', viceCaptain: '', members: [] }
+
 export default function PowerTeams() {
   const { user } = useAuth()
   const [teams, setTeams] = useState([])
@@ -11,7 +13,8 @@ export default function PowerTeams() {
   const [users, setUsers] = useState([])
   const [search, setSearch] = useState('')
   const [open, setOpen] = useState(false)
-  const [form, setForm] = useState({ name: '', chapter: '', captain: '', viceCaptain: '', members: [] })
+  const [editing, setEditing] = useState(null)
+  const [form, setForm] = useState(EMPTY)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -22,8 +25,8 @@ export default function PowerTeams() {
   useEffect(() => { load() }, [])
 
   useEffect(() => {
-    if (!form.chapter && chapters.length === 1) setForm((f) => ({ ...f, chapter: chapters[0]._id }))
-  }, [chapters, form.chapter])
+    if (!editing && !form.chapter && chapters.length === 1) setForm((f) => ({ ...f, chapter: chapters[0]._id }))
+  }, [chapters, form.chapter, editing])
 
   const chapterUsers = useMemo(
     () => users.filter((u) => (u.chapter?._id || u.chapter) === form.chapter),
@@ -47,17 +50,42 @@ export default function PowerTeams() {
     setForm((f) => ({ ...f, members: f.members.includes(id) ? f.members.filter((x) => x !== id) : [...f.members, id] }))
   }
 
-  async function create(e) {
+  function openNew() {
+    setEditing(null)
+    setForm({ ...EMPTY, chapter: chapters.length === 1 ? chapters[0]._id : '' })
+    setError(''); setOpen(true)
+  }
+  function openEdit(t) {
+    setEditing(t)
+    setForm({
+      name: t.name || '',
+      chapter: t.chapter?._id || t.chapter || '',
+      captain: t.captain?._id || t.captain || '',
+      viceCaptain: t.viceCaptain?._id || t.viceCaptain || '',
+      members: (t.members || []).map((m) => m._id || m),
+    })
+    setError(''); setOpen(true)
+  }
+
+  async function save(e) {
     e.preventDefault()
     setError(''); setLoading(true)
     try {
-      await api.post('/power-teams', {
-        name: form.name, chapter: form.chapter,
-        captain: form.captain || null, viceCaptain: form.viceCaptain || null,
-        members: form.members,
-      })
-      setForm({ name: '', chapter: form.chapter, captain: '', viceCaptain: '', members: [] })
-      setOpen(false)
+      if (editing) {
+        await api.put(`/power-teams/${editing._id}`, {
+          name: form.name,
+          captain: form.captain || null,
+          viceCaptain: form.viceCaptain || null,
+          members: form.members,
+        })
+      } else {
+        await api.post('/power-teams', {
+          name: form.name, chapter: form.chapter,
+          captain: form.captain || null, viceCaptain: form.viceCaptain || null,
+          members: form.members,
+        })
+      }
+      setForm(EMPTY); setEditing(null); setOpen(false)
       await load()
     } catch (err) { setError(err.message) } finally { setLoading(false) }
   }
@@ -77,7 +105,7 @@ export default function PowerTeams() {
         subtitle={`${filtered.length} of ${teams.length} teams`}
         search={search} onSearch={setSearch} searchPlaceholder="Search team, chapter, captain or member"
         actionLabel={canManage ? 'New team' : undefined}
-        onAction={canManage ? () => setOpen(true) : undefined}
+        onAction={canManage ? openNew : undefined}
       />
 
       <div className="team-grid">
@@ -88,7 +116,12 @@ export default function PowerTeams() {
                 <div className="team-name">{t.name}</div>
                 <div className="cell-sub">{t.chapter?.name}</div>
               </div>
-              {canManage && <button className="btn btn-danger btn-sm" onClick={() => remove(t)}>Delete</button>}
+              {canManage && (
+                <div className="row-actions">
+                  <button className="btn btn-secondary btn-sm" onClick={() => openEdit(t)}>Edit</button>
+                  <button className="btn btn-danger btn-sm" onClick={() => remove(t)}>Delete</button>
+                </div>
+              )}
             </div>
             <div className="team-leads">
               <div><span className="muted small">Captain</span><div>{t.captain?.name || '—'}</div></div>
@@ -106,12 +139,12 @@ export default function PowerTeams() {
         {filtered.length === 0 && <div className="muted center pad panel">{search ? 'No teams match your search' : 'No power teams yet'}</div>}
       </div>
 
-      <Modal open={open} onClose={() => setOpen(false)} title="Create power team" width={560}>
-        <form className="form" onSubmit={create}>
+      <Modal open={open} onClose={() => setOpen(false)} title={editing ? `Edit power team — ${editing.name}` : 'Create power team'} width={560}>
+        <form className="form" onSubmit={save}>
           <div className="grid-2-cols">
             <label className="field">
               <span>Chapter</span>
-              <select value={form.chapter} onChange={(e) => setField('chapter', e.target.value)} required>
+              <select value={form.chapter} onChange={(e) => setField('chapter', e.target.value)} required disabled={!!editing}>
                 <option value="">— Select —</option>
                 {chapters.map((c) => <option key={c._id} value={c._id}>{c.name}</option>)}
               </select>
@@ -150,7 +183,7 @@ export default function PowerTeams() {
           {error && <div className="alert error">{error}</div>}
           <div className="row-end">
             <button type="button" className="btn btn-ghost" onClick={() => setOpen(false)}>Cancel</button>
-            <button className="btn btn-primary" disabled={loading}>{loading ? 'Saving…' : 'Create team'}</button>
+            <button className="btn btn-primary" disabled={loading}>{loading ? 'Saving…' : (editing ? 'Save changes' : 'Create team')}</button>
           </div>
         </form>
       </Modal>

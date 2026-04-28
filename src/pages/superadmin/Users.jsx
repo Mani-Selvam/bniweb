@@ -13,12 +13,15 @@ const ROLE_OPTIONS = [
   { value: 'super_admin', label: 'Super Admin' },
 ]
 
+const EMPTY = { name: '', phone: '', email: '', role: 'member', chapter: '' }
+
 export default function Users() {
   const [users, setUsers] = useState([])
   const [chapters, setChapters] = useState([])
   const [search, setSearch] = useState('')
   const [open, setOpen] = useState(false)
-  const [form, setForm] = useState({ name: '', phone: '', email: '', role: 'member', chapter: '' })
+  const [editing, setEditing] = useState(null)
+  const [form, setForm] = useState(EMPTY)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -42,19 +45,33 @@ export default function Users() {
     )
   }, [users, search])
 
-  async function add(e) {
-    e.preventDefault()
-    setError(''); setLoading(true)
+  function openNew() { setEditing(null); setForm(EMPTY); setError(''); setOpen(true) }
+  function openEdit(u) {
+    setEditing(u)
+    setForm({
+      name: u.name || '',
+      phone: u.phone || '',
+      email: u.email || '',
+      role: u.role || 'member',
+      chapter: u.chapter?._id || u.chapter || '',
+    })
+    setError(''); setOpen(true)
+  }
+
+  async function save(e) {
+    e.preventDefault(); setError(''); setLoading(true)
     try {
-      await api.post('/users', { ...form, chapter: form.chapter || null })
-      setForm({ name: '', phone: '', email: '', role: 'member', chapter: '' })
-      setOpen(false)
+      const payload = { ...form, chapter: form.chapter || null }
+      if (editing) {
+        await api.put(`/users/${editing._id}`, payload)
+      } else {
+        await api.post('/users', payload)
+      }
+      setForm(EMPTY); setEditing(null); setOpen(false)
       await load()
     } catch (err) { setError(err.message) } finally { setLoading(false) }
   }
 
-  async function updateRole(u, role) { await api.put(`/users/${u._id}`, { role }); load() }
-  async function updateChapter(u, chapter) { await api.put(`/users/${u._id}`, { chapter: chapter || null }); load() }
   async function toggle(u) { await api.post(`/users/${u._id}/toggle-active`); load() }
   async function remove(u) {
     if (!confirm(`Delete ${u.name}?`)) return
@@ -67,7 +84,7 @@ export default function Users() {
         title="Users"
         subtitle={`${filtered.length} of ${users.length} users`}
         search={search} onSearch={setSearch} searchPlaceholder="Search by name, email, phone, role, chapter"
-        actionLabel="New user" onAction={() => setOpen(true)}
+        actionLabel="New user" onAction={openNew}
       />
 
       <section className="panel">
@@ -85,19 +102,11 @@ export default function Users() {
                     <div>{u.phone}</div>
                     <div className="cell-sub">{u.email}</div>
                   </td>
-                  <td data-label="Role">
-                    <select value={u.role} onChange={(e) => updateRole(u, e.target.value)} className="select-inline">
-                      {ROLE_OPTIONS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
-                    </select>
-                  </td>
-                  <td data-label="Chapter">
-                    <select value={u.chapter?._id || u.chapter || ''} onChange={(e) => updateChapter(u, e.target.value)} className="select-inline">
-                      <option value="">—</option>
-                      {chapters.map((c) => <option key={c._id} value={c._id}>{c.name}</option>)}
-                    </select>
-                  </td>
+                  <td data-label="Role">{(ROLE_OPTIONS.find((r) => r.value === u.role) || {}).label || u.role}</td>
+                  <td data-label="Chapter">{u.chapter?.name || '—'}</td>
                   <td data-label="Status"><span className={'badge ' + (u.isActive ? 'ok' : 'off')}>{u.isActive ? 'Active' : 'Inactive'}</span></td>
                   <td data-label="Actions" className="row-actions">
+                    <button className="btn btn-secondary btn-sm" onClick={() => openEdit(u)}>Edit</button>
                     <button className="btn btn-ghost btn-sm" onClick={() => toggle(u)}>{u.isActive ? 'Disable' : 'Enable'}</button>
                     <button className="btn btn-danger btn-sm" onClick={() => remove(u)}>Delete</button>
                   </td>
@@ -109,8 +118,8 @@ export default function Users() {
         </div>
       </section>
 
-      <Modal open={open} onClose={() => setOpen(false)} title="Add user" width={560}>
-        <form className="form" onSubmit={add}>
+      <Modal open={open} onClose={() => setOpen(false)} title={editing ? `Edit user — ${editing.name}` : 'Add user'} width={560}>
+        <form className="form" onSubmit={save}>
           <div className="grid-2-cols">
             <label className="field"><span>Name</span><input value={form.name} onChange={(e) => setField('name', e.target.value)} required autoFocus /></label>
             <label className="field"><span>Phone</span><input value={form.phone} onChange={(e) => setField('phone', e.target.value)} placeholder="9876543210" required /></label>
@@ -134,7 +143,7 @@ export default function Users() {
           {error && <div className="alert error">{error}</div>}
           <div className="row-end">
             <button type="button" className="btn btn-ghost" onClick={() => setOpen(false)}>Cancel</button>
-            <button className="btn btn-primary" disabled={loading}>{loading ? 'Saving…' : 'Create user'}</button>
+            <button className="btn btn-primary" disabled={loading}>{loading ? 'Saving…' : (editing ? 'Save changes' : 'Create user')}</button>
           </div>
         </form>
       </Modal>
