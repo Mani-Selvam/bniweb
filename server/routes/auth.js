@@ -60,10 +60,13 @@ router.post('/request-otp', async (req, res, next) => {
     if (!user) return res.status(404).json({ error: 'No account found for this phone/email' });
     if (!user.isActive) return res.status(403).json({ error: 'Account is deactivated' });
 
-    const { expiresAt } = await issueOtp({ user, purpose, channel: 'both' });
+    const { expiresAt, reused } = await issueOtp({ user, purpose, channel: 'both' });
     res.json({
-      message: 'OTP sent to your phone (WhatsApp) and email',
+      message: reused
+        ? 'A code is already on its way — check your WhatsApp and email.'
+        : 'OTP sent to your phone (WhatsApp) and email',
       expiresAt,
+      reused: !!reused,
       userId: user._id,
       passwordSet: user.passwordSet,
     });

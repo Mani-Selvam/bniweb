@@ -1,10 +1,14 @@
-import { useState } from 'react'
+import { forwardRef, useState } from 'react'
 
-export default function PasswordInput({ value, onChange, autoFocus, minLength = 6, placeholder, name }) {
+const PasswordInput = forwardRef(function PasswordInput(
+  { value, onChange, autoFocus, minLength = 6, placeholder, name, autoComplete = 'current-password' },
+  ref
+) {
   const [show, setShow] = useState(false)
   return (
     <div className="password-wrap">
       <input
+        ref={ref}
         type={show ? 'text' : 'password'}
         value={value}
         onChange={onChange}
@@ -12,6 +16,7 @@ export default function PasswordInput({ value, onChange, autoFocus, minLength = 
         minLength={minLength}
         placeholder={placeholder}
         name={name}
+        autoComplete={autoComplete}
         required
       />
       <button
@@ -37,4 +42,6 @@ export default function PasswordInput({ value, onChange, autoFocus, minLength = 
       </button>
     </div>
   )
-}
+})
+
+export default PasswordInput
